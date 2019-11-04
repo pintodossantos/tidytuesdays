@@ -1,0 +1,62 @@
+---
+title: '2019-10-29'
+author: "Daniel Pinto dos Santos"
+date: "11/1/2019"
+output: html_document
+---
+
+This is taken from https://github.com/rfordatascience/tidytuesday.
+
+```{r message=FALSE}
+library(tidyverse)
+library(summarytools)
+library(viridis)
+
+library(lubridate)
+options(lubridate.week.start = 1)
+
+library(ggmap)
+source("2019-10-29 include.R") # this is just for register_google()
+
+theme_set(theme_minimal())
+```
+
+```{r}
+nyc_squirrels <- read_csv("https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2019/2019-10-29/nyc_squirrels.csv")
+nyc_map <- get_map("Central Park", zoom = 14)
+```
+
+```{r}
+nyc_squirrels <- nyc_squirrels %>% 
+  mutate(date = mdy(date))
+
+by_hectare <- nyc_squirrels %>% 
+  group_by(hectare) %>% 
+  summarise(long = mean(long),
+            lat = mean(lat),
+            count.total = n(),
+            count.juvenile = sum(age == "Juvenile", na.rm = TRUE),
+            count.adult = sum(age == "Adult", na.rm = TRUE),
+            frac.juvenile = sum(age == "Juvenile", na.rm = TRUE)/sum(age == "Adult", na.rm = TRUE)) %>% 
+  mutate(frac.juvenile.scaled = if_else(is.infinite(frac.juvenile), 1, rescale(frac.juvenile, to = c(-1,1))))
+
+ggmap(nyc_map) +
+  geom_point(aes(long, lat, color = frac.juvenile.scaled), size = 5, data = by_hectare) +
+  scale_color_gradient2(midpoint = mean(by_hectare$frac.juvenile.scaled, na.rm = TRUE),
+                        low = "red", high = "blue") +
+  theme_void()
+```
+
+```{r}
+nyc_squirrels %>% 
+  group_by(date, weekday = wday(date)) %>% 
+  count() %>% 
+  mutate(weekend = if_else(weekday >= 6, TRUE, FALSE)) %>% 
+  ggplot(aes(date, n, fill = weekend)) +
+    geom_bar(stat = "identity") +
+    scale_x_date(date_breaks = "1 day") +
+    theme(axis.text.x = element_text(angle = 90)) +
+    labs(y = "Squirrel sightings",
+         x = "",
+         fill = "Weekend")
+```
