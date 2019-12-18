@@ -1,0 +1,65 @@
+---
+title: '2019-11-12'
+author: "Daniel Pinto dos Santos"
+date: "11/13/2019"
+output: html_document
+---
+
+```{r}
+library(tidyverse)
+theme_set(theme_minimal())
+library(scales)
+```
+
+```{r}
+cran_code <- read_csv("https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2019/2019-11-12/loc_cran_packages.csv")
+cran_code <- cran_code %>% 
+  mutate(version.major = str_extract(version, "^\\d"))
+```
+
+```{r}
+cran_code %>% 
+  count(pkg_name, sort = TRUE)
+
+cran_code %>% 
+  filter(pkg_name == "httpuv")
+
+cran_code %>% 
+  count(pkg_name) %>% 
+  filter(n == 1)
+
+cran_code %>% 
+  filter(pkg_name == "A3")
+```
+
+```{r}
+cran_code %>% 
+  group_by(version.major) %>% 
+  summarise(count = n(),
+            mean.lines.code = mean(code),
+            mean.lines.comment = mean(comment),
+            mean.lines.blank = mean(blank),
+            median.lines.code = median(code)
+            ) %>%
+  pivot_longer(cols = contains("lines")) %>% 
+  ggplot(aes(x = version.major, y = value, color = name, group = name)) +
+    geom_line() +
+    stat_smooth(method = "lm")
+
+cor.test(cran_code$code, cran_code$comment)
+```
+
+```{r}
+cran_code %>%
+  arrange(desc(code)) %>% 
+  head()
+
+cran_code %>% 
+  ggplot(aes(x = code)) +
+    geom_histogram(bins = 50) +
+    scale_x_log10(labels = number)
+
+cran_code %>% 
+  filter(code < comment)
+```
+

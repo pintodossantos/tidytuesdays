@@ -1,0 +1,47 @@
+---
+title: "2019-11-05"
+author: "Daniel Pinto dos Santos"
+date: "11/5/2019"
+output: html_document
+---
+
+```{r message=FALSE}
+library(tidyverse)
+theme_set(theme_minimal())
+```
+
+```{r}
+commute_mode.raw <- read_csv("https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2019/2019-11-05/commute.csv")
+```
+
+```{r}
+# remove some errors, could probably have been fixed easily (maybe I'll come back to it)
+commute_mode <- commute_mode.raw %>% 
+  filter(!state %in% c("Ca", "Massachusett"))
+```
+
+```{r}
+# load up map data for US states
+us <- map_data("state")
+
+# calculate mean percantage of walking and biking to work per state, then calculate difference and sum
+commute.perstate <- commute_mode %>% 
+  group_by(state, mode) %>% 
+  summarise(mean.perc = mean(percent)) %>% 
+  pivot_wider(names_from = mode, values_from = mean.perc) %>% 
+  mutate(diff = Bike - Walk,
+         sum  = Bike + Walk)
+
+# plot summed means of biking and walking to work on a map
+ggplot() +
+  geom_map(data = us, map = us, aes(x = long, y = lat, map_id = region), fill = "white", color = "white") +
+  geom_map(data = commute.perstate, map = us, aes(fill = sum/100, map_id = tolower(state))) +
+  theme_void() +
+  scale_fill_gradient(labels = scales::percent) +
+  labs(title = "Which state is leading in combined biking and walking to work?",
+       subtitle = "Sum of mean percentage of biking and walking in a state.",
+       fill = "Percent of total\nindividuals")
+
+ggsave("commutes.png", width = 12)
+```
+

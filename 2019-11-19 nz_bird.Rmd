@@ -1,0 +1,66 @@
+---
+title: '2019-11-19'
+author: "Daniel Pinto dos Santos"
+date: "11/19/2019"
+output: html_document
+---
+
+```{r}
+library(tidyverse)
+theme_set(theme_minimal())
+library(scales)
+```
+
+```{r}
+nz_bird <- read_csv("https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2019/2019-11-19/nz_bird.csv")
+```
+
+```{r}
+
+votes <- nrow(nz_bird) / 5
+  
+nz_bird %>%
+  drop_na() %>%
+  count(vote_rank) %>% 
+  ggplot(aes(x = vote_rank, y = n)) +
+    geom_bar(stat = "identity")
+
+```
+
+```{r}
+nz_bird %>% 
+  count(date) %>% 
+  ggplot(aes(x = date, y = n)) +
+    geom_line() +
+    scale_x_date(date_breaks = "3 days", date_labels = "%a, %d.%m")
+
+nz_bird %>% 
+  count(hour) %>% 
+  ggplot(aes(x = hour, y = n)) +
+    geom_line()
+```
+
+```{r}
+
+nz_bird_red <- nz_bird %>% 
+  filter(!bird_breed %in% c("Little shag", "Westland Petrel", "Light-mantled Sooty Albatross"))
+
+votes_red <- nz_bird_red %>% 
+  count(vote_rank) %>% 
+  filter(vote_rank == "vote_1") %>% 
+  pull(n)
+
+nz_bird %>% 
+  drop_na() %>% 
+  count(vote_rank, bird_breed, sort = TRUE) %>% 
+  filter(vote_rank == "vote_1") %>% 
+  mutate(freq = n * 100 / votes)
+
+nz_bird_red %>% 
+  drop_na() %>% 
+  count(vote_rank, bird_breed, sort = TRUE) %>% 
+  filter(vote_rank == "vote_1") %>% 
+  mutate(freq = n * 100 / votes_red)
+
+```
+
